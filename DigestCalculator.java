@@ -20,10 +20,8 @@ import java.util.*;
 
 class Arquivo{
     String file_name;  
-    String md5; 
-    String sha1;
-    String sha256; 
-    String sha512;
+    String hash;
+    String status;
 }  
 
 public class DigestCalculator {
@@ -37,6 +35,7 @@ public class DigestCalculator {
         }
 
         String digestType = args[0];
+        String digestTypeNoDash = args[0];
         String pathFileWithDigestList = args[1];
         String pathFolderWithFiles = args[2];
 
@@ -118,30 +117,13 @@ public class DigestCalculator {
                 System.out.println("");
                 // Inicializa objeto do arquivo
                 arq[i] = new Arquivo();
-                arq[i].md5 = "";
-                arq[i].sha1 = "";
-                arq[i].sha256 = "";
-                arq[i].sha512 = "";
                 // Preenche e exibe objeto do arquivo
                 System.out.println("Arquivo salvo:");
                 arq[i].file_name = file_name;
                 System.out.println(file_name);
-                if (digestType == "MD5") {
-                    arq[i].md5 = final_digest;
-                    System.out.println(arq[i].md5);
-                }
-                if (digestType == "SHA-1") {
-                    arq[i].sha1 = final_digest;
-                    System.out.println(arq[i].sha1);
-                }
-                if (digestType == "SHA-256") {
-                    arq[i].sha256 = final_digest;
-                    System.out.println(arq[i].sha256);
-                }
-                if (digestType == "SHA-512") {
-                    arq[i].sha512 = final_digest;
-                    System.out.println(arq[i].sha512);
-                }
+                arq[i].hash = final_digest;
+                arq[i].status = "";
+                System.out.println(arq[i].hash);
                 System.out.println("");
                 System.out.println("-----------------------------------------------------------------");
                 System.out.println("");
@@ -182,33 +164,89 @@ public class DigestCalculator {
                 }  
                 sc.close(); // Finaliza o escaneamento  
 
-                System.out.println(listOfLists);
+                System.out.println(listOfLists + "\n");
+
+                // Varre os dados dos arquivos salvos e compara com os da lista
+                for (int i = 0; i < arq.length; i++) {
+                    // System.out.println(arq[i].file_name);
+                    // System.out.println(arq[i].md5);
+                    // System.out.println(arq[i].sha1);
+                    // System.out.println(arq[i].sha256);
+                    // System.out.println(arq[i].sha512);
+                    // System.out.println(" ");
+                    // if (list_file_content[0] == "MD5") {
+
+                    // }
+                    // if (list_file_content[0] == "SHA-1") {
+
+                    // }
+                    // if (list_file_content[0] == "SHA-256") {
+
+                    // }
+                    // if (list_file_content[0] == "MD5") {
+
+                    // }
+                    
+                    int x = 0;
+                    int y = 0;
+                    int z = 0;
+
+                    // System.out.println(listOfLists.get(1).get(0));
+                    // System.out.println(arq[i].file_name);
+
+                    while(x < listOfLists.size())
+                    {
+                        if(y < listOfLists.get(x).size())
+                        {
+                            if ((listOfLists.get(x).get(y)).equals(arq[i].file_name)) {
+                                // System.out.println(listOfLists.get(x).get(y));
+                                // System.out.println(arq[i].file_name);
+                                System.out.println("Achou arquivo " + listOfLists.get(x).get(y) + ".");
+                                z = y+1;
+                                while (z < listOfLists.get(x).size()) {
+                                    if ((listOfLists.get(x).get(z)).equals(digestTypeNoDash)) {
+                                        System.out.println("Achou Digest " + listOfLists.get(x).get(z) + ".");
+                                        if((listOfLists.get(x).get(z+1)).equals(arq[i].hash)) {
+                                            System.out.println("Achou hash " + listOfLists.get(x).get(z+1) + ".");
+                                            arq[i].status = "OK";
+                                            break;
+                                        }
+                                        else {
+                                            System.out.println("Hash não bateu.");
+                                            arq[i].status = "NOT OK";
+                                            break;
+                                        }
+                                    }
+                                    else {
+                                        arq[i].status = "NOT FOUND";
+                                    }
+                                    z++;
+                                }
+                            }
+                            // System.out.println(listOfLists.get(x).get(y));
+                            //do stuff with list.get(x).get(y)
+                            y++;
+                        }
+                        else
+                        {
+                            x++;
+                            y = 0;
+                        }
+                    }
+                    
+                }
+
+                // Imprime lista com resultados os status dos arquivos
+
+                System.out.println("\nLista de Status:\n");
+                for (int i = 0; i < arq.length; i++) {
+                    System.out.println(arq[i].file_name + " " + arq[i].hash + " " + arq[i].status + "\n");
+                }
+
             }  
             catch(IOException e)  
             {  
                 e.printStackTrace();  
-            }
-
-            // Varre os dados dos arquivos salvos e compara com os da lista
-            for (int i = 0; i < arq.length; i++) {
-                // System.out.println(arq[i].file_name);
-                // System.out.println(arq[i].md5);
-                // System.out.println(arq[i].sha1);
-                // System.out.println(arq[i].sha256);
-                // System.out.println(arq[i].sha512);
-                // System.out.println(" ");
-                // if (list_file_content[0] == "MD5") {
-
-                // }
-                // if (list_file_content[0] == "SHA-1") {
-
-                // }
-                // if (list_file_content[0] == "SHA-256") {
-
-                // }
-                // if (list_file_content[0] == "MD5") {
-
-                // }
             }
 
             System.out.println("");
