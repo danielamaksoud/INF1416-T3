@@ -15,14 +15,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.math.BigInteger;
-import java.util.Scanner; 
+import java.util.Scanner;
+import java.util.*;
 
 class Arquivo{
     String file_name;  
     String md5; 
     String sha1;
     String sha256; 
-    String sha512; 
+    String sha512;
 }  
 
 public class DigestCalculator {
@@ -117,10 +118,10 @@ public class DigestCalculator {
                 System.out.println("");
                 // Inicializa objeto do arquivo
                 arq[i] = new Arquivo();
-                arq[i].md5 = null;
-                arq[i].sha1 = null;
-                arq[i].sha256 = null;
-                arq[i].sha512 = null;
+                arq[i].md5 = "";
+                arq[i].sha1 = "";
+                arq[i].sha256 = "";
+                arq[i].sha512 = "";
                 // Preenche e exibe objeto do arquivo
                 System.out.println("Arquivo salvo:");
                 arq[i].file_name = file_name;
@@ -148,19 +149,66 @@ public class DigestCalculator {
 
             try  
             {  
+                // Cria lista de listas
+                List<List<String>> listOfLists = new ArrayList<>();
+
                 // Abre arquivo para leitura 
                 FileInputStream list_file = new FileInputStream(pathFileWithDigestList);       
                 Scanner sc = new Scanner(list_file);  // Arquivo a ser varrido 
+
                 // Retorna true se tiver uma próxima linha a ser lida  
                 while(sc.hasNextLine())  
                 {  
-                    System.out.println(sc.nextLine()); // Retorna a linha que foi pulada  
+                    // System.out.println(sc.nextLine()); // Retorna a linha que foi pulada  
+                    String input = sc.nextLine();
+
+                    // Cria lista interna 
+                    List<String> innerList = new ArrayList<>();
+                    
+                    // Adiciona elementos à lista interna
+                    String[] list_file_content = input.split(" ");
+
+                    // System.out.println(list_file_content[0]);
+                    // System.out.println(list_file_content[1]);
+                    // System.out.println(list_file_content[2]);
+                    // System.out.println(list_file_content.length);
+
+                    for (int i = 0; i < list_file_content.length; i++) {
+                        innerList.add(list_file_content[i]);
+                    }
+
+                    // Salva lista interna na lista das listas
+                    listOfLists.add(innerList);
                 }  
                 sc.close(); // Finaliza o escaneamento  
+
+                System.out.println(listOfLists);
             }  
             catch(IOException e)  
             {  
                 e.printStackTrace();  
+            }
+
+            // Varre os dados dos arquivos salvos e compara com os da lista
+            for (int i = 0; i < arq.length; i++) {
+                // System.out.println(arq[i].file_name);
+                // System.out.println(arq[i].md5);
+                // System.out.println(arq[i].sha1);
+                // System.out.println(arq[i].sha256);
+                // System.out.println(arq[i].sha512);
+                // System.out.println(" ");
+                // if (list_file_content[0] == "MD5") {
+
+                // }
+                // if (list_file_content[0] == "SHA-1") {
+
+                // }
+                // if (list_file_content[0] == "SHA-256") {
+
+                // }
+                // if (list_file_content[0] == "MD5") {
+
+                // }
             }
 
             System.out.println("");
@@ -168,7 +216,5 @@ public class DigestCalculator {
 		catch (Exception e) { 
 			System.err.println(e.getMessage()); 
 		}
-
     }
-
 }
