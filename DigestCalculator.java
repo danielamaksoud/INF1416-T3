@@ -16,6 +16,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.math.BigInteger;
 
+class Arquivo{
+    String file_name;  
+    String md5; 
+    String sha1;
+    String sha256; 
+    String sha512; 
+}  
+
 public class DigestCalculator {
 
     public static void main (String[] args) throws Exception {
@@ -47,6 +55,7 @@ public class DigestCalculator {
                 break;
             case "SHA512":
                 digestType = "SHA-512";
+                // System.out.println(digestType);
                 break;
             default:
                 System.err.println("");
@@ -71,14 +80,18 @@ public class DigestCalculator {
             System.out.println(":");
             System.out.println("");
 
+            // Incializa vetor de arquivos
+            Arquivo arq[] = new Arquivo[files.length];  
+
 			// Exibe os nomes de todos os arquivos dentro do diretório informado 
 			for (int i = 0; i < files.length; i++) {
                 System.out.print("Nome do arquivo: "); 
-                System.out.print(files[i].getName());
+                String file_name = files[i].getName();
+                System.out.print(file_name);
                 System.out.println("");
                 //System.out.println(pathFolderWithFiles+"/"+files[i].getName());
                 // Lê e exibe conteúdo de arquivo
-                String path_name = pathFolderWithFiles+"/"+files[i].getName();
+                String path_name = pathFolderWithFiles+"/"+file_name;
                 String file_content = Files.readString(Paths.get(path_name));
                 System.out.println("");
                 System.out.println("Conteúdo do arquivo:"); 
@@ -93,14 +106,44 @@ public class DigestCalculator {
                 byte[] digest = msg.digest();
                 //String.format("%1$040x", new BigInteger(1, digest));
                 System.out.print("Digest do conteúdo de ");
-                System.out.print(files[i].getName());
+                System.out.print(file_name);
                 System.out.print(":");
                 System.out.println("\n");
-                System.out.println(String.format("%1$040x", new BigInteger(1, digest)));
+                String final_digest = String.format("%1$040x", new BigInteger(1, digest));
+                System.out.println(final_digest);
                 System.out.println("");
                 System.out.println("-----------------------------------------------------------------");
                 System.out.println("");
-			} 
+                // Inicializa objeto do arquivo
+                arq[i] = new Arquivo();
+                arq[i].md5 = null;
+                arq[i].sha1 = null;
+                arq[i].sha256 = null;
+                arq[i].sha512 = null;
+                // Preenche e exibe objeto do arquivo
+                System.out.println("Arquivo salvo:");
+                arq[i].file_name = file_name;
+                System.out.println(file_name);
+                if (digestType == "MD5") {
+                    arq[i].md5 = final_digest;
+                    System.out.println(arq[i].md5);
+                }
+                if (digestType == "SHA-1") {
+                    arq[i].sha1 = final_digest;
+                    System.out.println(arq[i].sha1);
+                }
+                if (digestType == "SHA-256") {
+                    arq[i].sha256 = final_digest;
+                    System.out.println(arq[i].sha256);
+                }
+                if (digestType == "SHA-512") {
+                    arq[i].sha512 = final_digest;
+                    System.out.println(arq[i].sha512);
+                }
+                System.out.println("");
+                System.out.println("-----------------------------------------------------------------");
+                System.out.println("");
+			}
 
             System.out.println("");
 		} 
