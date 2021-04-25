@@ -10,11 +10,12 @@
 // Pacotes importados
 import java.security.*;
 import javax.crypto.*;
-import java.io.File;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.math.BigInteger;
+import java.util.Scanner; 
 
 class Arquivo{
     String file_name;  
@@ -144,6 +145,23 @@ public class DigestCalculator {
                 System.out.println("-----------------------------------------------------------------");
                 System.out.println("");
 			}
+
+            try  
+            {  
+                // Abre arquivo para leitura 
+                FileInputStream list_file = new FileInputStream(pathFileWithDigestList);       
+                Scanner sc = new Scanner(list_file);  // Arquivo a ser varrido 
+                // Retorna true se tiver uma próxima linha a ser lida  
+                while(sc.hasNextLine())  
+                {  
+                    System.out.println(sc.nextLine()); // Retorna a linha que foi pulada  
+                }  
+                sc.close(); // Finaliza o escaneamento  
+            }  
+            catch(IOException e)  
+            {  
+                e.printStackTrace();  
+            }
 
             System.out.println("");
 		} 
