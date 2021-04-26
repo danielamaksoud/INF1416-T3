@@ -14,6 +14,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.charset.StandardCharsets;
 import java.math.BigInteger;
 import java.util.Scanner;
 import java.util.*;
@@ -21,248 +23,257 @@ import java.util.*;
 class Arquivo{
     String file_name;  
     String hash;
-    String status;
+    String status = "OK";
+    boolean newLine;
 }  
 
 public class DigestCalculator {
+
+    private static String getDigest(String algorithm) {
+        switch (algorithm) {
+            case "MD5":
+                return algorithm;
+            case "SHA1":
+                return "SHA-1";
+            case "SHA256":
+                return "SHA-256";
+            case "SHA512":
+                return "SHA-512";
+            default:
+                System.err.println("\nTipo de Digest Inválido.\n");
+                System.exit(1);
+                return null;
+        }
+    }
+
+    private static byte[] getDigest(byte[] contentBytes, String digestType) {
+        try {
+            MessageDigest msg = MessageDigest.getInstance(digestType);
+            msg.update(contentBytes);
+            return msg.digest();
+        } catch(Exception e) {
+            System.err.println(e.getMessage()); 
+            System.exit(1);
+            return null;
+        }
+    }
+	
+	private static String convertByteToString(byte[] fileDigest) {
+		String digest = "";
+		
+		for(int i = 0; i < fileDigest.length; i++)
+			digest = digest + String.format("%02X", fileDigest[i]);
+		
+		return digest;
+	}
+
+    private static Arquivo getArquivo(File file, String digestType) {
+        Arquivo arquivo = new Arquivo();
+        arquivo.file_name = file.getName();
+
+        System.out.println(file.getAbsolutePath());
+
+        try {
+            String path = file.getAbsolutePath();
+            byte[] file_content = Files.readAllBytes(Paths.get(path));
+            byte[] digest = getDigest(file_content, digestType);
+            arquivo.hash = convertByteToString(digest);
+
+            System.out.println(arquivo.hash);
+        } catch(Exception e) {
+            System.err.println(e.getMessage()); 
+            System.exit(1);
+        }
+
+        return arquivo;
+    }
+
+    private static ArrayList<Arquivo> getArquivosDaPasta(String folderPath, String digestType) {
+        File folder = new File(folderPath);
+        File[] files = folder.listFiles();
+
+        ArrayList<Arquivo> arquivos = new ArrayList<>();
+
+        for(int i = 0; i < files.length; i++)
+            arquivos.add(getArquivo(files[i], digestType));
+
+        System.out.println("");
+
+        return arquivos;
+    }
+
+    private static Arquivo getArquivoLine(String line, String digestType) {
+        String[] text = line.split(" ");
+
+        Arquivo arquivo = new Arquivo();
+        arquivo.file_name = text[0];
+
+        for(int i = 1; i < text.length; i = i + 2) {
+            if(text[i].equals(digestType)) {
+                arquivo.hash = text[i+1];
+                break;
+            }
+        }
+
+        return arquivo;
+    }
+
+    private static ArrayList<Arquivo> getArquivosDaLista(String listPath, String digestType) {
+        File list = new File(listPath);
+        String path = list.getAbsolutePath();
+        List<String> lines = null;
+
+        try {
+            lines = Files.readAllLines(Paths.get(path));
+        } catch(Exception e) {
+            System.err.println(e.getMessage()); 
+            System.exit(1);
+        }
+
+        ArrayList<Arquivo> arquivos = new ArrayList<>();
+
+        for(String line : lines)
+            arquivos.add(getArquivoLine(line, digestType));
+
+        return arquivos;
+    }
+
+    public static void printInOrder(ArrayList<Arquivo> arquivosDaPasta, ArrayList<Arquivo> arquivosDaLista, String digestTypeNoDash) {
+        // printa o que está na lista
+        for(Arquivo arq1 : arquivosDaLista) {
+            for(Arquivo arq2 : arquivosDaPasta) {
+                if (arq1.file_name.equals(arq2.file_name))
+                    System.out.println(arq2.file_name + " " + digestTypeNoDash + " " + arq2.hash + " (" + arq2.status + ")");
+            }
+        }
+
+        // printa o que não está na lista
+        for(Arquivo arq1 : arquivosDaPasta) {
+            boolean found = false;
+
+            for(Arquivo arq2 : arquivosDaLista) {
+                if (arq1.file_name.equals(arq2.file_name))
+                    found = true;
+            }
+
+            if(!found)
+                System.out.println(arq1.file_name + " " + digestTypeNoDash + " " + arq1.hash + " (" + arq1.status + ")");
+        }
+
+        System.out.println("");
+    }
+
+    public static void addToEndOfFile(Path path, Arquivo arquivo, String digestTypeNoDash) {
+        try {
+            String line = arquivo.file_name + " " + digestTypeNoDash + " " + arquivo.hash + "\n";
+            Files.write(path, line.getBytes(), StandardOpenOption.APPEND);
+        } catch(Exception e) {
+            System.err.println(e.getMessage()); 
+            System.exit(1);
+        }
+    }
+
+    public static void addToEndOfLine(Path path, Arquivo arquivo, String digestTypeNoDash) {
+        try {
+            List<String> lines = Files.readAllLines(path);
+
+            for(int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i);
+                String[] text = line.split(" ");
+                
+                if(arquivo.file_name.equals(text[0])) {
+                    lines.set(i, line + " " + digestTypeNoDash + " " + arquivo.hash);
+                    break;
+                }
+            }
+
+            Files.write(path, lines, StandardCharsets.UTF_8, StandardOpenOption.WRITE);
+        } catch(Exception e) {
+            System.err.println(e.getMessage()); 
+            System.exit(1);
+        }
+    }
+
+    public static void addToFile(String listPath, Arquivo arquivo, String digestTypeNoDash) {
+        File list = new File(listPath);
+        Path path = Paths.get(list.getAbsolutePath());
+
+        if(arquivo.newLine)
+            addToEndOfFile(path, arquivo, digestTypeNoDash);
+        else
+            addToEndOfLine(path, arquivo, digestTypeNoDash);
+    }
 
     public static void main (String[] args) throws Exception {
 
         // Verifica o número de argumentos fornecidos pelo usuário
         if (args.length != 3) {
-            System.err.println("Usage: java DigestCalculatorTest <digest_type> <path_file_with_digest_list> <path_folder_with_files>");
+            System.err.println("Usage: java DigestCalculator <digest_type> <path_file_with_digest_list> <path_folder_with_files>");
             System.exit(1);
         }
 
-        String digestType = args[0];
+        String digestType = getDigest(args[0]);
         String digestTypeNoDash = args[0];
         String pathFileWithDigestList = args[1];
         String pathFolderWithFiles = args[2];
 
-        // System.out.println("Argumentos passados:");
-        // System.out.println(digestType);
-        // System.out.println(pathFileWithDigestList);
-        // System.out.println(pathFolderWithFiles);
+        System.out.println("Digest with dash: " + digestType);
+        System.out.println("Digest without dash: " + digestTypeNoDash);
+        System.out.println("Digest file path: " + pathFileWithDigestList);
+        System.out.println("Digest folder path: " + pathFolderWithFiles);
+        System.out.println("");
 
-        // Verifica o tipo do digest a ser calculado
-        switch (digestType) {
-            case "MD5":
-                break;
-            case "SHA1":
-                digestType = "SHA-1";
-                break;
-            case "SHA256":
-                digestType = "SHA-256";
-                break;
-            case "SHA512":
-                digestType = "SHA-512";
-                // System.out.println(digestType);
-                break;
-            default:
-                System.err.println("");
-                System.err.println("Tipo de Digest Inválido.");
-                System.err.println("");
-                System.exit(1);
+        ArrayList<Arquivo> arquivosDaPasta = getArquivosDaPasta(pathFolderWithFiles, digestType);
+        ArrayList<Arquivo> arquivosDaLista = getArquivosDaLista(pathFileWithDigestList, digestTypeNoDash);
+
+        for(Arquivo arq1 : arquivosDaPasta) {
+            for(Arquivo arq2 : arquivosDaPasta) {
+                if(arq1 == arq2)
+                    continue;
+                
+                if(arq1.hash.equals(arq2.hash)) {
+                    arq1.status = "COLLISION";
+                    arq2.status = "COLLISION";
+                    break;
+                }
+            }
         }
 
-        // Lê todos os arquivos dentro da pasta fornecida pelo usuário
-        try { 
+        for(Arquivo arq1 : arquivosDaPasta) {
+            if(arq1.status.equals("COLLISION"))
+                continue;
 
-			// Cria um objeto File
-			File f = new File(pathFolderWithFiles); 
+            boolean onList = false;
 
-			// Salva os nomes de todos os arquivos dentro 
-			// do diretório informado 
-			File[] files = f.listFiles(); 
+            for(Arquivo arq2 : arquivosDaLista) {
+                if(arq1.file_name.equals(arq2.file_name)) {
+                    onList = true;
 
-			System.out.println("");
-            System.out.println("Arquivos existentes em ");
-            System.out.print(pathFolderWithFiles);
-            System.out.println(":");
-            System.out.println("");
-
-            // Incializa vetor de arquivos
-            Arquivo arq[] = new Arquivo[files.length];  
-
-			// Exibe os nomes de todos os arquivos dentro do diretório informado 
-			for (int i = 0; i < files.length; i++) {
-                System.out.print("Nome do arquivo: "); 
-                String file_name = files[i].getName();
-                System.out.print(file_name);
-                System.out.println("");
-                //System.out.println(pathFolderWithFiles+"/"+files[i].getName());
-                // Lê e exibe conteúdo de arquivo
-                String path_name = pathFolderWithFiles+"/"+file_name;
-                String file_content = Files.readString(Paths.get(path_name));
-                System.out.println("");
-                System.out.println("Conteúdo do arquivo:"); 
-                System.out.println("");
-                System.out.println(file_content);
-                System.out.println("");
-                System.out.println("-----------------------------------------------------------------");
-                System.out.println("");
-                // Calcula e exibe digest do arquivo
-                MessageDigest msg = MessageDigest.getInstance(digestType);
-                msg.update(file_content.getBytes());
-                byte[] digest = msg.digest();
-                //String.format("%1$040x", new BigInteger(1, digest));
-                System.out.print("Digest do conteúdo de ");
-                System.out.print(file_name);
-                System.out.print(":");
-                System.out.println("\n");
-                String final_digest = String.format("%1$040x", new BigInteger(1, digest));
-                System.out.println(final_digest);
-                System.out.println("");
-                System.out.println("-----------------------------------------------------------------");
-                System.out.println("");
-                // Inicializa objeto do arquivo
-                arq[i] = new Arquivo();
-                // Preenche e exibe objeto do arquivo
-                System.out.println("Arquivo salvo:");
-                arq[i].file_name = file_name;
-                System.out.println(file_name);
-                arq[i].hash = final_digest;
-                arq[i].status = "";
-                System.out.println(arq[i].hash);
-                System.out.println("");
-                System.out.println("-----------------------------------------------------------------");
-                System.out.println("");
-			}
-
-            try  
-            {  
-                // Cria lista de listas
-                List<List<String>> listOfLists = new ArrayList<>();
-
-                // Abre arquivo para leitura 
-                FileInputStream list_file = new FileInputStream(pathFileWithDigestList);       
-                Scanner sc = new Scanner(list_file);  // Arquivo a ser varrido 
-
-                // Retorna true se tiver uma próxima linha a ser lida  
-                while(sc.hasNextLine())  
-                {  
-                    // System.out.println(sc.nextLine()); // Retorna a linha que foi pulada  
-                    String input = sc.nextLine();
-
-                    // Cria lista interna 
-                    List<String> innerList = new ArrayList<>();
-                    
-                    // Adiciona elementos à lista interna
-                    String[] list_file_content = input.split(" ");
-
-                    // System.out.println(list_file_content[0]);
-                    // System.out.println(list_file_content[1]);
-                    // System.out.println(list_file_content[2]);
-                    // System.out.println(list_file_content.length);
-
-                    for (int i = 0; i < list_file_content.length; i++) {
-                        innerList.add(list_file_content[i]);
+                    if(arq2.hash == null) {
+                        arq1.status = "NOT FOUND";
+                        arq1.newLine = false;
+                        continue;
                     }
 
-                    // Salva lista interna na lista das listas
-                    listOfLists.add(innerList);
-                }  
-                sc.close(); // Finaliza o escaneamento  
-
-                System.out.println(listOfLists + "\n");
-
-                // Varre os dados dos arquivos salvos e compara com os da lista
-                for (int i = 0; i < arq.length; i++) {
-                    // System.out.println(arq[i].file_name);
-                    // System.out.println(arq[i].md5);
-                    // System.out.println(arq[i].sha1);
-                    // System.out.println(arq[i].sha256);
-                    // System.out.println(arq[i].sha512);
-                    // System.out.println(" ");
-                    // if (list_file_content[0] == "MD5") {
-
-                    // }
-                    // if (list_file_content[0] == "SHA-1") {
-
-                    // }
-                    // if (list_file_content[0] == "SHA-256") {
-
-                    // }
-                    // if (list_file_content[0] == "MD5") {
-
-                    // }
-                    
-                    int x = 0;
-                    int y = 0;
-                    int z = 0;
-
-                    // System.out.println(listOfLists.get(1).get(0));
-                    // System.out.println(arq[i].file_name);
-
-                    while(x < listOfLists.size())
-                    {
-                        if(y < listOfLists.get(x).size())
-                        {
-                            if ((listOfLists.get(x).get(y)).equals(arq[i].file_name)) {
-                                // System.out.println(listOfLists.get(x).get(y));
-                                // System.out.println(arq[i].file_name);
-                                System.out.println("Achou arquivo " + listOfLists.get(x).get(y) + ".");
-                                z = y+1;
-                                while (z < listOfLists.get(x).size()) {
-                                    if ((listOfLists.get(x).get(z)).equals(digestTypeNoDash)) {
-                                        System.out.println("Achou Digest " + listOfLists.get(x).get(z) + ".");
-                                        if((listOfLists.get(x).get(z+1)).equals(arq[i].hash)) {
-                                            System.out.println("Achou hash " + listOfLists.get(x).get(z+1) + ".");
-                                            arq[i].status = "OK";
-                                            break;
-                                        }
-                                        else {
-                                            System.out.println("Hash não bateu.");
-                                            arq[i].status = "NOT OK";
-                                            break;
-                                        }
-                                    }
-                                    else {
-                                        arq[i].status = "NOT FOUND";
-                                    }
-                                    z++;
-                                }
-                            }
-                            // System.out.println(listOfLists.get(x).get(y));
-                            //do stuff with list.get(x).get(y)
-                            y++;
-                        }
-                        else
-                        {
-                            x++;
-                            y = 0;
-                        }
-                    }
-                    
+                    if(!arq1.hash.equals(arq2.hash))
+                        arq1.status = "NOT OK";
+                } else if(arq1.hash.equals(arq2.hash)){
+                    arq1.status = "COLLISION";
+                    break;
                 }
-
-                // // Varre os dados dos arquivos salvos e compara com os próprios
-                // for (int i = 0; i < arq.length; i++) {
-                //     for (int j = i+1; j < arq.length; j++) {
-                //         if (arq[i].hash == arq[j].hash){
-                //             arq[i].status = "COLISION";
-                //             arq[j].status = "COLISION";
-                //         }
-                //     }
-                // }
-
-                // Imprime lista com resultados os status dos arquivos
-
-                System.out.println("\nLista de Status:\n");
-                for (int i = 0; i < arq.length; i++) {
-                    System.out.println(arq[i].file_name + " " + arq[i].hash + " " + arq[i].status + "\n");
-                }
-
-            }  
-            catch(IOException e)  
-            {  
-                e.printStackTrace();  
             }
 
-            System.out.println("");
-		} 
-		catch (Exception e) { 
-			System.err.println(e.getMessage()); 
-		}
+            if(onList == false && !arq1.status.equals("COLLISION")) {
+                arq1.status = "NOT FOUND";
+                arq1.newLine = true;
+            }
+        }
+
+        printInOrder(arquivosDaPasta, arquivosDaLista, digestTypeNoDash);
+
+        for(Arquivo arq1 : arquivosDaPasta) {
+            if(arq1.status.equals("NOT FOUND"))
+                addToFile(pathFileWithDigestList, arq1, digestTypeNoDash);
+        }
     }
 }
