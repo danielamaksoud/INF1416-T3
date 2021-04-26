@@ -236,6 +236,16 @@ public class DigestCalculator {
                     
                 }
 
+                // // Varre os dados dos arquivos salvos e compara com os próprios
+                // for (int i = 0; i < arq.length; i++) {
+                //     for (int j = i+1; j < arq.length; j++) {
+                //         if (arq[i].hash == arq[j].hash){
+                //             arq[i].status = "COLISION";
+                //             arq[j].status = "COLISION";
+                //         }
+                //     }
+                // }
+
                 // Imprime lista com resultados os status dos arquivos
 
                 System.out.println("\nLista de Status:\n");
